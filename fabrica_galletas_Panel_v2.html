@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fábrica de Galletas — Panel de Simulación</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css">
+<style>
+:root {
+  --bg-body:     #0d1117;
+  --bg-card:     #161b22;
+  --bg-card2:    #1c2330;
+  --bg-input:    #21262d;
+  --border:      #30363d;
+  --border-soft: #21262d;
+  --accent:      #3fb950;
+  --accent-blue: #58a6ff;
+  --accent-warn: #d29922;
+  --accent-pkg:  #bc8cff;
+  --text-primary: #e6edf3;
+  --text-sec:    #8b949e;
+  --text-muted:  #484f58;
+  --L1-bg: #0d1f36; --L1-border: #1f6feb; --L1-text: #58a6ff;
+  --L2-bg: #0d2010; --L2-border: #3fb950; --L2-text: #56d364;
+  --L3-bg: #2d1b00; --L3-border: #d29922; --L3-text: #e3b341;
+  --font: 'Sora', sans-serif;
+  --mono: 'IBM Plex Mono', monospace;
+  --radius: 8px;
+  --radius-lg: 12px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg-body);
+  color: var(--text-primary);
+  font-family: var(--font);
+  min-height: 100vh;
+}
+
+/* ── Sidebar ── */
+#sidebar {
+  width: 220px; min-height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  position: fixed; top: 0; left: 0; bottom: 0;
+  z-index: 100;
+}
+.sidebar-logo {
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-logo .logo-icon { font-size: 22px; margin-bottom: 4px; display: block; }
+.sidebar-logo .logo-title { font-size: 13px; font-weight: 600; color: var(--text-primary); letter-spacing: 0.03em; }
+.sidebar-logo .logo-sub { font-size: 11px; color: var(--text-sec); }
+
+.sidebar-nav { padding: 14px 10px; flex: 1; }
+.nav-label { font-size: 10px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.08em; padding: 0 10px; margin-bottom: 6px; margin-top: 12px; }
+.nav-link-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 7px 10px; border-radius: var(--radius);
+  font-size: 12.5px; color: var(--text-sec);
+  cursor: pointer; transition: background 0.15s, color 0.15s;
+  text-decoration: none;
+}
+.nav-link-item:hover { background: var(--bg-input); color: var(--text-primary); }
+.nav-link-item.active { background: rgba(63,185,80,0.12); color: var(--accent); }
+.nav-link-item .ni { font-size: 14px; }
+
+.sidebar-footer {
+  padding: 14px 16px;
+  border-top: 1px solid var(--border);
+  font-size: 11px; color: var(--text-muted);
+  font-family: var(--mono);
+}
+
+/* ── Main ── */
+#main {
+  margin-left: 220px;
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+}
+
+/* ── Topbar ── */
+#topbar {
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 28px;
+  display: flex; align-items: center; gap: 12px;
+  position: sticky; top: 0; z-index: 50;
+}
+.topbar-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.topbar-sub { font-size: 12px; color: var(--text-sec); }
+.topbar-spacer { flex: 1; }
+.status-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 500; padding: 4px 11px;
+  border-radius: 20px; border: 1px solid;
+  font-family: var(--mono);
+}
+.status-badge.idle   { border-color: var(--border); color: var(--text-sec); }
+.status-badge.running { border-color: var(--accent); color: var(--accent); }
+.status-badge.done   { border-color: var(--accent-blue); color: var(--accent-blue); }
+.status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.status-badge.running .status-dot { animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* ── Page content ── */
+#content { padding: 24px 28px; flex: 1; }
+
+/* ── Cards ── */
+.panel-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.panel-card .card-header {
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg-card2);
+}
+.panel-card .card-header .ch-icon { font-size: 14px; }
+.panel-card .card-header .ch-title { font-size: 12px; font-weight: 600; color: var(--text-primary); letter-spacing: 0.03em; }
+.panel-card .card-header .ch-meta { font-size: 11px; color: var(--text-sec); margin-left: auto; font-family: var(--mono); }
+.panel-card .card-body { padding: 16px 18px; }
+
+/* ── Config Tabs ── */
+.config-tabs {
+  display: flex; gap: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-card2);
+}
+.config-tab {
+  padding: 10px 18px;
+  font-size: 12px; font-weight: 500;
+  color: var(--text-sec);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+.config-tab:hover { color: var(--text-primary); }
+.config-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.config-tab-panel { display: none; padding: 16px 18px; }
+.config-tab-panel.active { display: block; }
+
+/* ── Machine tile ── */
+.machine-tile {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.machine-tile .mt-icon { font-size: 22px; }
+.machine-tile .mt-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.machine-tile .mt-dur { font-size: 11px; color: var(--text-sec); font-family: var(--mono); }
+
+.counter-wrap { display: flex; align-items: center; gap: 10px; }
+.cnt-btn {
+  width: 28px; height: 28px; border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-primary); font-size: 16px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: border-color 0.15s, background 0.15s;
+}
+.cnt-btn:hover { border-color: var(--accent); background: rgba(63,185,80,0.08); }
+.cnt-val { font-size: 18px; font-weight: 700; min-width: 28px; text-align: center; font-family: var(--mono); color: var(--text-primary); }
+.cnt-label { font-size: 11px; color: var(--text-sec); }
+
+/* ── Duration input ── */
+.dur-wrap { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.dur-label { font-size: 11px; color: var(--text-sec); min-width: 60px; }
+.dur-input {
+  width: 70px; padding: 4px 8px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 6px; color: var(--text-primary);
+  font-family: var(--mono); font-size: 12px;
+  transition: border-color 0.15s;
+}
+.dur-input:focus { outline: none; border-color: var(--accent); }
+.dur-unit { font-size: 11px; color: var(--text-muted); font-family: var(--mono); }
+
+/* ── Lote config ── */
+.lote-tile {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.lote-tile.L1 { border-left: 3px solid #1f6feb; }
+.lote-tile.L2 { border-left: 3px solid #3fb950; }
+.lote-tile.L3 { border-left: 3px solid #d29922; }
+.lote-tile .lt-header { display: flex; align-items: center; gap: 8px; }
+.lote-tile .lt-dot { width: 8px; height: 8px; border-radius: 50%; }
+.lote-tile .lt-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.lote-fields { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.lote-field label { font-size: 10px; color: var(--text-sec); display: block; margin-bottom: 4px; letter-spacing: 0.05em; }
+.lote-input {
+  width: 100%; padding: 5px 9px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 6px; color: var(--text-primary);
+  font-family: var(--mono); font-size: 12px;
+  transition: border-color 0.15s;
+}
+.lote-input:focus { outline: none; border-color: var(--accent-blue); }
+
+.btn-start {
+  background: var(--accent); color: #0d1117;
+  border: none; border-radius: var(--radius);
+  font-family: var(--font); font-size: 13px; font-weight: 700;
+  padding: 10px 0; width: 100%;
+  cursor: pointer; letter-spacing: 0.03em;
+  transition: opacity 0.15s;
+}
+.btn-start:hover { opacity: 0.88; }
+
+/* ── Sim Controls ── */
+.ctrl-strip {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-card2);
+  flex-wrap: wrap;
+}
+.ctrl-btn {
+  font-size: 11.5px; font-family: var(--font); font-weight: 500;
+  padding: 5px 13px; border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent; color: var(--text-sec);
+  cursor: pointer; transition: all 0.15s;
+}
+.ctrl-btn:hover { border-color: var(--text-sec); color: var(--text-primary); }
+.ctrl-btn.danger { border-color: var(--border); color: var(--text-sec); }
+.ctrl-btn.danger:hover { border-color: #f85149; color: #f85149; }
+.ctrl-btn.speed-active { border-color: var(--accent-blue); color: var(--accent-blue); background: rgba(88,166,255,0.08); }
+.sep { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; }
+.ctrl-spacer { flex: 1; }
+.clock-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--mono); font-size: 12px; font-weight: 500;
+  padding: 4px 12px; border-radius: 20px;
+  background: var(--bg-input); border: 1px solid var(--border); color: var(--text-primary);
+}
+.done-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--mono); font-size: 12px; font-weight: 500;
+  padding: 4px 12px; border-radius: 20px;
+  background: rgba(63,185,80,0.1); border: 1px solid var(--accent); color: var(--accent);
+}
+
+/* ── Pending ── */
+.pending-strip {
+  display: flex; gap: 6px; flex-wrap: wrap;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--border-soft);
+  min-height: 40px; align-items: center;
+}
+.pending-tag {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; padding: 3px 11px; border-radius: 20px;
+  border: 1px dashed; font-family: var(--mono);
+}
+
+/* ── Pipeline ── */
+.pipeline-grid {
+  display: grid;
+  grid-template-columns: 1fr 24px 1fr 24px 1fr 24px 1fr 24px 1fr;
+  gap: 0;
+}
+.stage-col { display: flex; flex-direction: column; gap: 8px; }
+.stage-head { text-align: center; padding: 10px 0 6px; }
+.stage-icon-big { font-size: 20px; display: block; }
+.stage-name-lbl { font-size: 11.5px; font-weight: 600; color: var(--text-primary); display: block; }
+.stage-cap-lbl { font-size: 10px; color: var(--text-sec); font-family: var(--mono); }
+.stage-body {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px; min-height: 110px;
+  display: flex; flex-direction: column; gap: 5px;
+  overflow-y: auto; max-height: 320px;
+}
+.arrow-col { display: flex; align-items: flex-start; justify-content: center; padding-top: 52px; color: var(--text-muted); font-size: 18px; }
+
+/* ── Machine Slot ── */
+.mslot {
+  font-size: 11px; padding: 7px 9px;
+  border-radius: 6px; border: 1px solid var(--border);
+  background: var(--bg-card); display: flex; flex-direction: column; gap: 4px;
+}
+.mslot.idle { opacity: 0.3; flex-direction: row; align-items: center; justify-content: space-between; }
+.mslot-top { display: flex; align-items: center; justify-content: space-between; }
+.mslot-id { font-size: 10px; font-weight: 600; font-family: var(--mono); color: var(--text-sec); }
+.mslot-timer { font-size: 10px; font-family: var(--mono); }
+.mslot-name { font-size: 11px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.slot-bar { height: 3px; border-radius: 2px; background: var(--border); overflow: hidden; }
+.slot-fill { height: 100%; border-radius: 2px; transition: width 0.1s; }
+
+/* ── Queue chips ── */
+.queue-section { margin-top: 4px; }
+.queue-label { font-size: 10px; font-weight: 600; margin-bottom: 3px; }
+.chip-wrap { display: flex; flex-wrap: wrap; gap: 3px; }
+.chip {
+  font-size: 10px; padding: 2px 8px; border-radius: 20px;
+  border: 1px solid; display: inline-flex; align-items: center; gap: 3px;
+  font-family: var(--mono);
+}
+.chip .wait { font-size: 9px; opacity: 0.7; }
+.empty-msg { font-size: 11px; color: var(--text-muted); text-align: center; padding: 18px 0; }
+
+/* ── Stats ── */
+.stat-tile {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.stat-label { font-size: 11px; color: var(--text-sec); }
+.stat-value { font-size: 22px; font-weight: 700; font-family: var(--mono); color: var(--text-primary); }
+.stat-unit { font-size: 11px; color: var(--text-sec); font-family: var(--mono); }
+
+/* ── Log ── */
+.log-container {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  height: 240px;
+  overflow-y: auto;
+  font-family: var(--mono);
+  font-size: 11.5px;
+}
+.log-container::-webkit-scrollbar { width: 6px; }
+.log-container::-webkit-scrollbar-track { background: transparent; }
+.log-container::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.log-container::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+.log-line {
+  display: flex; align-items: baseline; gap: 8px;
+  padding: 5px 14px;
+  border-bottom: 1px solid var(--border-soft);
+  color: var(--text-sec);
+  transition: background 0.15s;
+}
+.log-line:last-child { border-bottom: none; }
+.log-line:hover { background: rgba(255,255,255,0.03); }
+.log-line .ll-time { color: var(--text-muted); flex-shrink: 0; font-size: 10.5px; }
+.log-line .ll-msg { color: var(--text-sec); flex: 1; }
+.log-line.ev-arrive .ll-time { color: var(--accent-blue); }
+.log-line.ev-arrive .ll-msg { color: var(--accent-blue); }
+.log-line.ev-assign .ll-msg { color: var(--text-primary); }
+.log-line.ev-done .ll-time { color: var(--accent); }
+.log-line.ev-done .ll-msg { color: var(--accent); }
+
+.log-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-card2);
+  position: sticky; top: 0;
+  font-size: 10px; color: var(--text-muted); font-weight: 600;
+  letter-spacing: 0.07em;
+}
+.log-count-badge {
+  display: inline-block; background: var(--bg-input);
+  border: 1px solid var(--border); border-radius: 4px;
+  font-size: 10px; padding: 1px 7px; color: var(--text-sec);
+  margin-left: auto; font-family: var(--mono);
+}
+.log-auto-scroll-toggle {
+  font-size: 10px; padding: 2px 8px; border-radius: 4px;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--text-sec); cursor: pointer; font-family: var(--mono);
+}
+.log-auto-scroll-toggle.on { border-color: var(--accent); color: var(--accent); background: rgba(63,185,80,0.08); }
+
+/* ── Finish Banner ── */
+.finish-banner {
+  background: rgba(63,185,80,0.07);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  display: none;
+}
+.finish-banner .fb-title { font-size: 14px; font-weight: 700; color: var(--accent); margin-bottom: 10px; display: flex; align-items: center; gap: 7px; }
+.finish-banner .fb-stats { display: flex; gap: 20px; flex-wrap: wrap; }
+.finish-banner .fb-stat { font-size: 12px; color: var(--text-sec); font-family: var(--mono); }
+.finish-banner .fb-stat strong { color: var(--accent); }
+
+/* ── Pause button ── */
+.btn-pause {
+  background: var(--accent); color: #0d1117;
+  border: none; border-radius: 6px;
+  font-family: var(--font); font-size: 11.5px; font-weight: 700;
+  padding: 5px 14px; cursor: pointer;
+  transition: opacity 0.15s;
+}
+.btn-pause:hover { opacity: 0.85; }
+.btn-pause:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* ── Scrollbar global ── */
+html { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+
+/* ── Config summary badge ── */
+.cfg-summary {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; color: var(--text-sec);
+  font-family: var(--mono);
+}
+.cfg-badge {
+  background: var(--bg-input); border: 1px solid var(--border);
+  border-radius: 4px; padding: 1px 7px;
+  font-size: 11px; font-family: var(--mono); color: var(--text-primary);
+}
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    <span class="logo-icon">🍪</span>
+    <div class="logo-title">Fabrica de Galletas</div>
+    <div class="logo-sub">Panel de Simulación</div>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-label">Simulación</div>
+    <a class="nav-link-item active"><span class="ni">⚙️</span> Configuración</a>
+  </div>
+  <div class="sidebar-footer">
+    v2.0.0 · Developed by: Christian Andres Rivas Cuesta && Camilo Andrés López Rentería
+  </div>
+</nav>
+
+<!-- Main -->
+<div id="main">
+  <!-- Topbar -->
+  <div id="topbar">
+    <div>
+      <div class="topbar-title">Fábrica de Galletas</div>
+      <div class="topbar-sub">Simulación por eventos discretos · Presentado a: Jarrinson Antonio Arredondo Corena · Materia de Simulacion</div>
+    </div>
+    <div class="topbar-spacer"></div>
+    <span class="status-badge idle" id="status-badge">
+      <span class="status-dot"></span>
+      <span id="status-text">En espera</span>
+    </span>
+  </div>
+
+  <!-- Content -->
+  <div id="content">
+
+    <!-- CONFIG PANEL -->
+    <div id="config-panel">
+      <div class="panel-card mb-4">
+        <div class="card-header">
+          <span class="ch-icon">⚙️</span>
+          <span class="ch-title">CONFIGURAR SIMULACIÓN</span>
+          <span class="ch-meta" id="cfg-summary-badge">3 lotes · 40 galletas</span>
+        </div>
+
+        <!-- Tabs -->
+        <div class="config-tabs">
+          <div class="config-tab active" onclick="switchTab('tab-machines')">🏭 Estaciones</div>
+          <div class="config-tab" onclick="switchTab('tab-times')">⏱ Duraciones</div>
+          <div class="config-tab" onclick="switchTab('tab-lotes')">📦 Lotes</div>
+        </div>
+
+        <!-- TAB: Estaciones (cantidad de máquinas) -->
+        <div class="config-tab-panel active" id="tab-machines">
+          <div class="row g-3 mb-4">
+            <!-- Mezclado -->
+            <div class="col-md-3">
+              <div class="machine-tile">
+                <div>
+                  <div class="mt-icon">🥣</div>
+                  <div class="mt-name">Mezclado</div>
+                  <div class="mt-dur" id="lbl-mix">— min / galleta</div>
+                </div>
+                <div class="counter-wrap">
+                  <button class="cnt-btn" onclick="adj('mix',-1)">−</button>
+                  <span class="cnt-val" id="v-mix">1</span>
+                  <button class="cnt-btn" onclick="adj('mix',1)">+</button>
+                  <span class="cnt-label">estaciones</span>
+                </div>
+              </div>
+            </div>
+            <!-- Horno -->
+            <div class="col-md-3">
+              <div class="machine-tile">
+                <div>
+                  <div class="mt-icon">🔥</div>
+                  <div class="mt-name">Horno</div>
+                  <div class="mt-dur" id="lbl-bake">— min / galleta</div>
+                </div>
+                <div class="counter-wrap">
+                  <button class="cnt-btn" onclick="adj('bake',-1)">−</button>
+                  <span class="cnt-val" id="v-bake">1</span>
+                  <button class="cnt-btn" onclick="adj('bake',1)">+</button>
+                  <span class="cnt-label">hornos</span>
+                </div>
+              </div>
+            </div>
+            <!-- Enfriado -->
+            <div class="col-md-3">
+              <div class="machine-tile">
+                <div>
+                  <div class="mt-icon">❄️</div>
+                  <div class="mt-name">Enfriado</div>
+                  <div class="mt-dur" id="lbl-cool">— min / galleta</div>
+                </div>
+                <div class="counter-wrap">
+                  <button class="cnt-btn" onclick="adj('cool',-1)">−</button>
+                  <span class="cnt-val" id="v-cool">1</span>
+                  <button class="cnt-btn" onclick="adj('cool',1)">+</button>
+                  <span class="cnt-label">enfriadores</span>
+                </div>
+              </div>
+            </div>
+            <!-- Empaquetado -->
+            <div class="col-md-3">
+              <div class="machine-tile">
+                <div>
+                  <div class="mt-icon">📦</div>
+                  <div class="mt-name">Empaquetado</div>
+                  <div class="mt-dur" id="lbl-pack">— min / galleta</div>
+                </div>
+                <div class="counter-wrap">
+                  <button class="cnt-btn" onclick="adj('pack',-1)">−</button>
+                  <span class="cnt-val" id="v-pack">1</span>
+                  <button class="cnt-btn" onclick="adj('pack',1)">+</button>
+                  <span class="cnt-label">puestos</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button class="btn-start" onclick="startSim()">▶ Iniciar simulación</button>
+        </div>
+
+        <!-- TAB: Duraciones de procesos -->
+        <div class="config-tab-panel" id="tab-times">
+          <div class="row g-3 mb-4">
+            <div class="col-md-3">
+              <div class="machine-tile">
+                <div class="mt-icon">🥣</div>
+                <div class="mt-name">Mezclado</div>
+                <div class="dur-wrap" style="margin-top:8px;">
+                  <span class="dur-label">Mín (min)</span>
+                  <input class="dur-input" type="number" id="dur-mix-min" value="7" min="1" max="120" onchange="updateDurLabels()">
+                </div>
+                <div class="dur-wrap">
+                  <span class="dur-label">Máx (min)</span>
+                  <input class="dur-input" type="number" id="dur-mix-max" value="10" min="1" max="120" onchange="updateDurLabels()">
+                </div>
+                <div style="font-size:10px;color:var(--text-muted);font-family:var(--mono);">Duración aleatoria en rango</div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="machine-tile">
+                <div class="mt-icon">🔥</div>
+                <div class="mt-name">Horno</div>
+                <div class="dur-wrap" style="margin-top:8px;">
+                  <span class="dur-label">Duración</span>
+                  <input class="dur-input" type="number" id="dur-bake" value="15" min="1" max="120" onchange="updateDurLabels()">
+                  <span class="dur-unit">min</span>
+                </div>
+                <div style="font-size:10px;color:var(--text-muted);font-family:var(--mono);">Duración fija</div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="machine-tile">
+                <div class="mt-icon">❄️</div>
+                <div class="mt-name">Enfriado</div>
+                <div class="dur-wrap" style="margin-top:8px;">
+                  <span class="dur-label">Duración</span>
+                  <input class="dur-input" type="number" id="dur-cool" value="8" min="1" max="120" onchange="updateDurLabels()">
+                  <span class="dur-unit">min</span>
+                </div>
+                <div style="font-size:10px;color:var(--text-muted);font-family:var(--mono);">Duración fija</div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="machine-tile">
+                <div class="mt-icon">📦</div>
+                <div class="mt-name">Empaquetado</div>
+                <div class="dur-wrap" style="margin-top:8px;">
+                  <span class="dur-label">Duración</span>
+                  <input class="dur-input" type="number" id="dur-pack" value="5" min="1" max="120" onchange="updateDurLabels()">
+                  <span class="dur-unit">min</span>
+                </div>
+                <div style="font-size:10px;color:var(--text-muted);font-family:var(--mono);">Duración fija</div>
+              </div>
+            </div>
+          </div>
+          <button class="btn-start" onclick="startSim()">▶ Iniciar simulación</button>
+        </div>
+
+        <!-- TAB: Configuración de Lotes -->
+        <div class="config-tab-panel" id="tab-lotes">
+          <div class="row g-3 mb-3" id="lotes-config-rows">
+            <!-- generado por JS -->
+          </div>
+          <div class="d-flex gap-2 mb-3">
+            <button class="ctrl-btn" onclick="addLote()" style="border-color:var(--accent);color:var(--accent);">+ Añadir lote</button>
+            <button class="ctrl-btn danger" onclick="removeLote()">− Quitar lote</button>
+          </div>
+          <button class="btn-start" onclick="startSim()">▶ Iniciar simulación</button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- SIM UI -->
+    <div id="sim-ui" style="display:none;">
+
+      <!-- Finish Banner -->
+      <div class="finish-banner mb-3" id="finish-banner">
+        <div class="fb-title">✅ Producción completada</div>
+        <div class="fb-stats" id="fb-stats"></div>
+      </div>
+
+      <!-- Controls -->
+      <div class="panel-card mb-3">
+        <div class="ctrl-strip">
+          <button class="btn-pause" id="btn-pause" onclick="togglePause()">⏸ Pausar</button>
+          <button class="ctrl-btn danger" onclick="resetToConfig()">↩ Reconfigurar</button>
+          <div class="sep"></div>
+          <span style="font-size:11.5px;color:var(--text-sec);">Velocidad</span>
+          <button class="ctrl-btn speed-active" id="sp1" onclick="setSpeed(1,this)">1×</button>
+          <button class="ctrl-btn" id="sp5" onclick="setSpeed(5,this)">5×</button>
+          <button class="ctrl-btn" id="sp20" onclick="setSpeed(20,this)">20×</button>
+          <div class="ctrl-spacer"></div>
+          <span class="clock-pill" id="clock">⏱ t = 0.0 min</span>
+          <span class="done-pill" id="done-count">0 / 0 listas</span>
+        </div>
+
+        <!-- Pending lotes -->
+        <div class="pending-strip" id="pending-row"></div>
+      </div>
+
+      <!-- Pipeline + Log side by side -->
+      <div class="row g-3 mb-3">
+        <div class="col-xl-8">
+          <div class="panel-card h-100">
+            <div class="card-header">
+              <span class="ch-icon">🏭</span>
+              <span class="ch-title">LÍNEA DE PRODUCCIÓN</span>
+            </div>
+            <div class="card-body">
+              <div class="pipeline-grid" id="pipeline-grid">
+                <!-- generado dinámicamente -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Log Panel -->
+        <div class="col-xl-4">
+          <div class="panel-card h-100" style="display:flex;flex-direction:column;">
+            <div class="card-header">
+              <span class="ch-icon">📋</span>
+              <span class="ch-title">REGISTRO DE EVENTOS</span>
+              <span class="ch-meta">
+                <button class="log-auto-scroll-toggle on" id="log-autoscroll-btn" onclick="toggleAutoScroll()">Auto-scroll ON</button>
+              </span>
+            </div>
+            <div class="log-container" id="log-area" style="flex:1; border-radius:0 0 var(--radius-lg) var(--radius-lg);">
+              <div class="log-header">
+                TIMESTAMP
+                <span style="flex:1"></span>
+                EVENTO
+                <span class="log-count-badge" id="log-count">0 eventos</span>
+              </div>
+              <div id="log-lines"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="panel-card">
+        <div class="card-header">
+          <span class="ch-icon">📊</span>
+          <span class="ch-title">MÉTRICAS EN TIEMPO REAL</span>
+        </div>
+        <div class="card-body">
+          <div class="row g-3" id="stats-row">
+            <div class="col-6 col-md-3">
+              <div class="stat-tile">
+                <div class="stat-label">Espera promedio</div>
+                <div class="stat-value" id="st-avgwait">—</div>
+                <div class="stat-unit">minutos</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="stat-tile">
+                <div class="stat-label">Cola más larga</div>
+                <div class="stat-value" id="st-maxq">—</div>
+                <div class="stat-unit">galletas</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="stat-tile">
+                <div class="stat-label">En proceso</div>
+                <div class="stat-value" id="st-inprog">0</div>
+                <div class="stat-unit">galletas</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="stat-tile">
+                <div class="stat-label">Pendientes</div>
+                <div class="stat-value" id="st-pend">0</div>
+                <div class="stat-unit">galletas</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /sim-ui -->
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+// ─────────────────────────────────────────────────
+// COLORES POR LOTE (hasta 8 lotes)
+// ─────────────────────────────────────────────────
+const LOTE_COLORS = [
+  {bg:'rgba(31,111,235,0.12)',border:'#1f6feb',text:'#58a6ff',dot:'#1f6feb'},
+  {bg:'rgba(63,185,80,0.12)', border:'#3fb950',text:'#56d364',dot:'#3fb950'},
+  {bg:'rgba(210,153,34,0.12)',border:'#d29922',text:'#e3b341',dot:'#d29922'},
+  {bg:'rgba(188,140,255,0.12)',border:'#bc8cff',text:'#d2a8ff',dot:'#bc8cff'},
+  {bg:'rgba(255,123,114,0.12)',border:'#ff7b72',text:'#ffa198',dot:'#ff7b72'},
+  {bg:'rgba(79,201,176,0.12)', border:'#4fc9b0',text:'#7ee8d4',dot:'#4fc9b0'},
+  {bg:'rgba(255,166,77,0.12)', border:'#ffa64d',text:'#ffcc99',dot:'#ffa64d'},
+  {bg:'rgba(240,80,200,0.12)', border:'#f050c8',text:'#f599e0',dot:'#f050c8'},
+];
+
+// ─────────────────────────────────────────────────
+// ESTADO DE CONFIGURACIÓN DE LOTES (editable)
+// ─────────────────────────────────────────────────
+let lotesConfig = [
+  { name:'Lote 1', arrival: 0,  qty: 3  },
+  { name:'Lote 2', arrival: 10, qty: 12 },
+  { name:'Lote 3', arrival: 25, qty: 25 },
+];
+
+const caps = { mix:1, bake:1, cool:1, pack:1 };
+
+const STAGES = ['mix','bake','cool','pack'];
+const STAGE_META = {
+  mix:  { icon:'🥣', name:'Mezclado',    capLabel:id=>`${id} estación${id>1?'es':''}` },
+  bake: { icon:'🔥', name:'Horno',       capLabel:id=>`${id} horno${id>1?'s':''}` },
+  cool: { icon:'❄️', name:'Enfriado',    capLabel:id=>`${id} enfriador${id>1?'es':''}` },
+  pack: { icon:'📦', name:'Empaquetado', capLabel:id=>`${id} puesto${id>1?'s':''}` },
+};
+
+let autoScroll = true;
+
+// ─────────────────────────────────────────────────
+// TABS DE CONFIGURACIÓN
+// ─────────────────────────────────────────────────
+function switchTab(id){
+  document.querySelectorAll('.config-tab').forEach((t,i)=>{
+    const panels=['tab-machines','tab-times','tab-lotes'];
+    t.classList.toggle('active', panels[i]===id);
+  });
+  document.querySelectorAll('.config-tab-panel').forEach(p=>{
+    p.classList.toggle('active', p.id===id);
+  });
+}
+
+// ─────────────────────────────────────────────────
+// CONTADORES DE MÁQUINAS
+// ─────────────────────────────────────────────────
+function adj(k,d){
+  caps[k]=Math.max(1,Math.min(10,caps[k]+d));
+  document.getElementById('v-'+k).textContent=caps[k];
+}
+
+// ─────────────────────────────────────────────────
+// DURACIONES (lectura desde inputs)
+// ─────────────────────────────────────────────────
+function getDurations(){
+  return {
+    mixMin: Math.max(1, parseInt(document.getElementById('dur-mix-min').value)||7),
+    mixMax: Math.max(1, parseInt(document.getElementById('dur-mix-max').value)||10),
+    bake:   Math.max(1, parseInt(document.getElementById('dur-bake').value)||15),
+    cool:   Math.max(1, parseInt(document.getElementById('dur-cool').value)||8),
+    pack:   Math.max(1, parseInt(document.getElementById('dur-pack').value)||5),
+  };
+}
+
+function updateDurLabels(){
+  const d = getDurations();
+  const mixMin = Math.min(d.mixMin, d.mixMax);
+  const mixMax = Math.max(d.mixMin, d.mixMax);
+  document.getElementById('lbl-mix').textContent  = `${mixMin}–${mixMax} min / galleta`;
+  document.getElementById('lbl-bake').textContent = `${d.bake} min / galleta`;
+  document.getElementById('lbl-cool').textContent = `${d.cool} min / galleta`;
+  document.getElementById('lbl-pack').textContent = `${d.pack} min / galleta`;
+}
+
+// ─────────────────────────────────────────────────
+// RENDER LOTES CONFIG
+// ─────────────────────────────────────────────────
+function renderLotesConfig(){
+  const container = document.getElementById('lotes-config-rows');
+  let h = '';
+  lotesConfig.forEach((l, i) => {
+    const col = LOTE_COLORS[i % LOTE_COLORS.length];
+    h += `<div class="col-md-4">
+      <div class="lote-tile" style="border-left:3px solid ${col.border};">
+        <div class="lt-header">
+          <div class="lt-dot" style="background:${col.dot};"></div>
+          <input class="lote-input" style="font-weight:600;font-size:13px;background:transparent;border:none;color:var(--text-primary);padding:0;width:100%;"
+            value="${l.name}" onchange="lotesConfig[${i}].name=this.value; updateSummary();">
+        </div>
+        <div class="lote-fields">
+          <div class="lote-field">
+            <label>LLEGADA (min)</label>
+            <input class="lote-input" type="number" min="0" value="${l.arrival}"
+              onchange="lotesConfig[${i}].arrival=Math.max(0,parseInt(this.value)||0); updateSummary();">
+          </div>
+          <div class="lote-field">
+            <label>GALLETAS</label>
+            <input class="lote-input" type="number" min="1" value="${l.qty}"
+              onchange="lotesConfig[${i}].qty=Math.max(1,parseInt(this.value)||1); updateSummary();">
+          </div>
+          <div class="lote-field">
+            <label>COLOR</label>
+            <div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap;">
+              ${LOTE_COLORS.map((c,ci)=>`<div onclick="lotesConfig[${i}]._colorIdx=${ci}; renderLotesConfig();" 
+                style="width:14px;height:14px;border-radius:50%;background:${c.dot};cursor:pointer;
+                border:2px solid ${(lotesConfig[i]._colorIdx??i)===ci?'white':'transparent'};"></div>`).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  });
+  container.innerHTML = h;
+  updateSummary();
+}
+
+function addLote(){
+  if(lotesConfig.length >= 8) return;
+  const lastArrival = lotesConfig[lotesConfig.length-1]?.arrival ?? 0;
+  lotesConfig.push({ name:`Lote ${lotesConfig.length+1}`, arrival: lastArrival+10, qty: 10 });
+  renderLotesConfig();
+}
+
+function removeLote(){
+  if(lotesConfig.length <= 1) return;
+  lotesConfig.pop();
+  renderLotesConfig();
+}
+
+function updateSummary(){
+  const total = lotesConfig.reduce((s,l)=>s+l.qty,0);
+  document.getElementById('cfg-summary-badge').textContent = `${lotesConfig.length} lotes · ${total} galletas`;
+}
+
+// ─────────────────────────────────────────────────
+// CFG DINÁMICO (construido antes de simular)
+// ─────────────────────────────────────────────────
+function buildCFG(){
+  const cfg = {};
+  lotesConfig.forEach((l, i) => {
+    const ci = l._colorIdx ?? i;
+    const col = LOTE_COLORS[ci % LOTE_COLORS.length];
+    const key = 'L'+(i+1);
+    cfg[key] = { ...col, label: l.name, col: { ...col, label: l.name } };
+  });
+  return cfg;
+}
+
+function buildLOTES(){
+  return lotesConfig.map((l, i) => [l.arrival, l.qty, 'L'+(i+1)]);
+}
+
+function buildTOTAL(){
+  return lotesConfig.reduce((s,l)=>s+l.qty, 0);
+}
+
+// ─────────────────────────────────────────────────
+// SIM ENGINE
+// ─────────────────────────────────────────────────
+let CFG, LOTES, TOTAL, DURATIONS;
+
+function rng(s){ let x=s^0xdeadbeef; return()=>{x^=x<<13;x^=x>>17;x^=x<<5;return(x>>>0)/0xffffffff;} }
+function makeMachines(n){ return Array.from({length:n},(_,i)=>({id:i+1,cookie:null,finishAt:null,startAt:null,duration:0})); }
+
+function buildSim(){
+  const r=rng(42); let cookies=[]; let gid=1;
+  LOTES.forEach(([a,q,lote])=>{
+    for(let i=0;i<q;i++){
+      const mixMin=DURATIONS.mixMin, mixMax=DURATIONS.mixMax;
+      const mixDur=mixMin+Math.floor(r()*(mixMax-mixMin+1));
+      cookies.push({id:gid++,lote,arrivalMin:a,stage:'waiting',queuedAt:0,finishAt:null,
+        stageTimes:{mix:mixDur, bake:DURATIONS.bake, cool:DURATIONS.cool, pack:DURATIONS.pack},
+        waitTimes:{mix:0,bake:0,cool:0,pack:0},col:CFG[lote]});
+    }
+  });
+  const machines={};
+  STAGES.forEach(st=>{ machines[st]=makeMachines(caps[st]); });
+  const queues={};
+  STAGES.forEach(st=>{ queues[st]=[]; });
+  return {time:0,cookies,machines,queues,done:[],log:[],arrived:new Set(),finished:false};
+}
+
+const SNAMES = {mix:'Mezclado',bake:'Horno',cool:'Enfriado',pack:'Empaquetado'};
+
+function simStep(s,dt){
+  s.time+=dt;
+  LOTES.forEach(([a,,lote])=>{
+    if(!s.arrived.has(lote)&&s.time>=a){
+      s.arrived.add(lote);
+      const b=s.cookies.filter(c=>c.lote===lote);
+      b.forEach(c=>{c.stage='queue-mix';c.queuedAt=s.time;s.queues.mix.push(c);});
+      s.log.push({t:s.time,msg:`${CFG[lote].label} llega — ${b.length} galletas`,type:'arrive'});
+    }
+  });
+
+  STAGES.forEach((st,si)=>{
+    const nxt = si < STAGES.length-1 ? STAGES[si+1] : 'done';
+    s.machines[st].forEach(m=>{
+      if(!m.cookie&&s.queues[st].length>0){
+        const c=s.queues[st].shift();
+        c.waitTimes[st]=s.time-c.queuedAt;
+        c.stage='in-'+st;c.finishAt=s.time+c.stageTimes[st];
+        m.cookie=c;m.finishAt=c.finishAt;m.startAt=s.time;m.duration=c.stageTimes[st];
+        s.log.push({t:s.time,msg:`M${m.id} → ${c.col.label} #${c.id} a ${SNAMES[st]}`,type:'assign'});
+      }
+    });
+    s.machines[st].forEach(m=>{
+      if(m.cookie&&s.time>=m.finishAt){
+        const c=m.cookie;m.cookie=null;m.finishAt=null;m.startAt=null;
+        if(nxt==='done'){
+          c.stage='done';s.done.push(c);
+          s.log.push({t:s.time,msg:`✓ ${c.col.label} #${c.id} lista`,type:'done'});
+        } else {
+          c.stage='queue-'+nxt;c.queuedAt=s.time;s.queues[nxt].push(c);
+        }
+      }
+    });
+  });
+
+  if(s.done.length>=TOTAL&&!s.finished){s.finished=true;onFinish(s);}
+}
+
+// ─────────────────────────────────────────────────
+// RENDER
+// ─────────────────────────────────────────────────
+function groupBy(arr){
+  const g={};arr.forEach(c=>{if(!g[c.lote])g[c.lote]=[];g[c.lote].push(c);});return g;
+}
+
+function renderMachines(machines,queue,trackId,simTime){
+  const el=document.getElementById(trackId); let h='';
+  machines.forEach(m=>{
+    const c=m.cookie;
+    if(c){
+      const rem=Math.max(0,m.finishAt-simTime);
+      const pct=m.duration>0?Math.min(100,((simTime-m.startAt)/m.duration)*100):0;
+      h+=`<div class="mslot" style="border-color:${c.col.border}40;background:${c.col.bg};">
+        <div class="mslot-top">
+          <span class="mslot-id" style="color:${c.col.text};">M${m.id}</span>
+          <span class="mslot-timer" style="color:${c.col.text};">${rem.toFixed(1)} min</span>
+        </div>
+        <div class="mslot-name" style="color:${c.col.text};">${c.col.label} · #${c.id}</div>
+        <div class="slot-bar"><div class="slot-fill" style="width:${pct}%;background:${c.col.border};"></div></div>
+      </div>`;
+    } else {
+      h+=`<div class="mslot idle"><span class="mslot-id">M${m.id}</span><span class="mslot-timer" style="color:var(--text-muted);">libre</span></div>`;
+    }
+  });
+  if(queue&&queue.length>0){
+    const g=groupBy(queue);
+    Object.entries(g).forEach(([lote,cs])=>{
+      const col=CFG[lote];
+      h+=`<div class="queue-section"><div class="queue-label" style="color:${col.text};">${col.label} en cola (${cs.length})</div><div class="chip-wrap">`;
+      cs.forEach(c=>{
+        const wt=(simTime-c.queuedAt).toFixed(1);
+        h+=`<span class="chip" style="background:${col.bg};border-color:${col.border};color:${col.text};">#${c.id}<span class="wait">${wt}m</span></span>`;
+      });
+      h+=`</div></div>`;
+    });
+  }
+  if(!h) h='<div class="empty-msg">vacío</div>';
+  el.innerHTML=h;
+}
+
+function renderDone(s){
+  const el=document.getElementById('track-done');
+  if(!s.done.length){el.innerHTML='<div class="empty-msg">vacío</div>';return;}
+  const g=groupBy(s.done);let h='';
+  Object.entries(g).forEach(([lote,cs])=>{
+    const col=CFG[lote];
+    h+=`<div class="queue-section"><div class="queue-label" style="color:${col.text};">${col.label} (${cs.length})</div><div class="chip-wrap">`;
+    cs.forEach(c=>{h+=`<span class="chip" style="background:${col.bg};border-color:${col.border};color:${col.text};opacity:0.75;">#${c.id}</span>`;});
+    h+=`</div></div>`;
+  });
+  el.innerHTML=h;
+}
+
+let _lastLogLen = 0;
+
+function renderLog(s){
+  const linesEl = document.getElementById('log-lines');
+  const countEl = document.getElementById('log-count');
+  const container = document.getElementById('log-area');
+  if(s.log.length === _lastLogLen) return;
+  _lastLogLen = s.log.length;
+  const reversed = [...s.log].reverse();
+  linesEl.innerHTML = reversed.map(e=>{
+    const cls = e.type==='arrive'?'ev-arrive':e.type==='done'?'ev-done':'ev-assign';
+    return `<div class="log-line ${cls}">
+      <span class="ll-time">[${e.t.toFixed(1).padStart(6,' ')} min]</span>
+      <span class="ll-msg">${e.msg}</span>
+    </div>`;
+  }).join('');
+  countEl.textContent = `${s.log.length} eventos`;
+  if(autoScroll){ container.scrollTop = 0; }
+}
+
+function renderSim(s){
+  // Pending
+  let ph='';
+  LOTES.forEach(([a,q,lote])=>{
+    if(!s.arrived.has(lote)){
+      const col=CFG[lote];const rem=Math.max(0,a-s.time);
+      ph+=`<span class="pending-tag" style="background:${col.bg};border-color:${col.border};color:${col.text};">
+        ${col.label}: ${q} galletas · en ${rem.toFixed(1)} min
+      </span>`;
+    }
+  });
+  document.getElementById('pending-row').innerHTML=ph||'<span style="font-size:11px;color:var(--text-muted);">Todos los lotes han llegado</span>';
+
+  STAGES.forEach(st => {
+    renderMachines(s.machines[st], s.queues[st], 'track-'+st, s.time);
+  });
+  renderDone(s);
+  renderLog(s);
+
+  document.getElementById('clock').textContent=`⏱ t = ${s.time.toFixed(1)} min`;
+  document.getElementById('done-count').textContent=`${s.done.length} / ${TOTAL} listas`;
+
+  // Stats
+  if(s.done.length>0){
+    const allW=s.done.flatMap(c=>Object.values(c.waitTimes));
+    const avg=allW.reduce((a,b)=>a+b,0)/allW.length;
+    const maxQ=Math.max(...STAGES.map(st=>s.queues[st].length));
+    document.getElementById('st-avgwait').textContent=avg.toFixed(1);
+    document.getElementById('st-maxq').textContent=maxQ;
+    document.getElementById('st-inprog').textContent=s.done.length;
+    document.getElementById('st-pend').textContent=TOTAL-s.done.length;
+  }
+}
+
+function onFinish(s){
+  document.getElementById('finish-banner').style.display='block';
+  const allW=s.done.flatMap(c=>Object.values(c.waitTimes));
+  const avg=allW.reduce((a,b)=>a+b,0)/allW.length;
+  let fbh=`<span class="fb-stat">Espera promedio: <strong>${avg.toFixed(1)} min</strong></span>`;
+  LOTES.forEach(([,,lote])=>{
+    const dc=s.done.filter(c=>c.lote===lote);
+    const ws=dc.flatMap(c=>Object.values(c.waitTimes));
+    const a=ws.length?ws.reduce((a,b)=>a+b,0)/ws.length:0;
+    fbh+=`<span class="fb-stat">${CFG[lote].label}: <strong>${a.toFixed(1)} min espera</strong></span>`;
+  });
+  fbh+=`<span class="fb-stat">Tiempo total: <strong>${s.time.toFixed(1)} min</strong></span>`;
+  document.getElementById('fb-stats').innerHTML=fbh;
+  const btn=document.getElementById('btn-pause');
+  btn.disabled=true; btn.style.opacity='0.35';
+  const badge=document.getElementById('status-badge');
+  badge.className='status-badge done';
+  document.getElementById('status-text').textContent='Completado';
+}
+
+// ─────────────────────────────────────────────────
+// PIPELINE HTML (dinámico según etapas)
+// ─────────────────────────────────────────────────
+function buildPipelineHTML(){
+  const grid = document.getElementById('pipeline-grid');
+  // 4 etapas + done = 5 cols, 4 flechas
+  // grid-template-columns: 1fr 24px 1fr 24px 1fr 24px 1fr 24px 1fr
+  grid.style.gridTemplateColumns = Array.from({length:STAGES.length+1},()=>'1fr').join(' 24px ');
+  let h = '';
+  STAGES.forEach((st, i) => {
+    const meta = STAGE_META[st];
+    h += `<div class="stage-col">
+      <div class="stage-head">
+        <span class="stage-icon-big">${meta.icon}</span>
+        <span class="stage-name-lbl">${meta.name}</span>
+        <span class="stage-cap-lbl" id="cap-${st}">${meta.capLabel(caps[st])}</span>
+      </div>
+      <div class="stage-body" id="track-${st}"></div>
+    </div>
+    <div class="arrow-col">›</div>`;
+  });
+  // Done
+  h += `<div class="stage-col">
+    <div class="stage-head">
+      <span class="stage-icon-big">✅</span>
+      <span class="stage-name-lbl">Listas</span>
+      <span class="stage-cap-lbl">&nbsp;</span>
+    </div>
+    <div class="stage-body" id="track-done"></div>
+  </div>`;
+  grid.innerHTML = h;
+}
+
+// ─────────────────────────────────────────────────
+// LOOP
+// ─────────────────────────────────────────────────
+let sim,paused=false,speed=1,af,lastTs=null;
+
+function loop(ts){
+  if(!paused){
+    if(lastTs!==null&&!sim.finished) simStep(sim,(ts-lastTs)/1000*speed);
+    renderSim(sim);
+    lastTs=ts;
+    if(sim.finished){cancelAnimationFrame(af);af=null;return;}
+  }
+  af=requestAnimationFrame(loop);
+}
+
+function startSim(){
+  // Leer config actualizada
+  CFG      = buildCFG();
+  LOTES    = buildLOTES();
+  TOTAL    = buildTOTAL();
+  DURATIONS = getDurations();
+
+  document.getElementById('config-panel').style.display='none';
+  document.getElementById('sim-ui').style.display='block';
+  document.getElementById('finish-banner').style.display='none';
+
+  buildPipelineHTML();
+
+  // Actualizar labels de capacidad en pipeline
+  STAGES.forEach(st => {
+    const el = document.getElementById('cap-'+st);
+    if(el) el.textContent = STAGE_META[st].capLabel(caps[st]);
+  });
+
+  paused=false;speed=1;lastTs=null;_lastLogLen=0;
+  const btn=document.getElementById('btn-pause');
+  btn.disabled=false;btn.style.opacity='1';btn.textContent='⏸ Pausar';
+  document.querySelectorAll('.ctrl-btn').forEach(b=>b.classList.remove('speed-active'));
+  document.getElementById('sp1').classList.add('speed-active');
+  const badge=document.getElementById('status-badge');
+  badge.className='status-badge running';
+  document.getElementById('status-text').textContent='Ejecutando';
+  document.getElementById('st-avgwait').textContent='—';
+  document.getElementById('st-maxq').textContent='—';
+  document.getElementById('st-inprog').textContent='0';
+  document.getElementById('st-pend').textContent=TOTAL;
+  document.getElementById('log-lines').innerHTML='';
+  document.getElementById('log-count').textContent='0 eventos';
+  document.getElementById('done-count').textContent=`0 / ${TOTAL} listas`;
+  sim=buildSim();
+  if(af)cancelAnimationFrame(af);
+  af=requestAnimationFrame(loop);
+}
+
+function resetToConfig(){
+  if(af)cancelAnimationFrame(af);
+  paused=false;lastTs=null;
+  document.getElementById('sim-ui').style.display='none';
+  document.getElementById('config-panel').style.display='block';
+  const badge=document.getElementById('status-badge');
+  badge.className='status-badge idle';
+  document.getElementById('status-text').textContent='En espera';
+}
+
+function togglePause(){
+  if(sim&&sim.finished)return;
+  paused=!paused;lastTs=null;
+  const btn=document.getElementById('btn-pause');
+  btn.textContent=paused?'▶ Reanudar':'⏸ Pausar';
+  if(!paused)af=requestAnimationFrame(loop);
+}
+
+function setSpeed(v,btn){
+  speed=v;lastTs=null;
+  document.querySelectorAll('.ctrl-btn').forEach(b=>b.classList.remove('speed-active'));
+  btn.classList.add('speed-active');
+}
+
+function toggleAutoScroll(){
+  autoScroll=!autoScroll;
+  const btn=document.getElementById('log-autoscroll-btn');
+  btn.textContent='Auto-scroll '+(autoScroll?'ON':'OFF');
+  btn.classList.toggle('on',autoScroll);
+}
+
+// ─────────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────────
+renderLotesConfig();
+updateDurLabels();
+</script>
+</body>
+</html>
